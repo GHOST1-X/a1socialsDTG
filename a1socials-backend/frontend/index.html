@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A1SOCIALS — Wallet &amp; Orders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+<style>
+  :root{
+    --bg: #120404;
+    --surface: #1D0909;
+    --surface-2: #2A0D0D;
+    --border: rgba(245,237,230,0.09);
+    --text: #F5EDE6;
+    --text-muted: #B98F7A;
+    --accent: #E8A33D;
+    --accent-dim: #7A5A22;
+    --success: #4CAF7D;
+    --error: #E8615D;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',sans-serif; line-height:1.5;
+    padding-bottom:60px;
+  }
+  h1,h2,h3,.brand{ font-family:'Space Grotesk',sans-serif; }
+
+  .topbar{
+    position:sticky; top:0; z-index:10;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; background:rgba(18,4,4,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{ font-weight:700; font-size:20px; letter-spacing:-0.02em; }
+  .wallet-chip{
+    display:flex; align-items:center; gap:10px;
+    background:var(--surface); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; font-size:14px;
+  }
+  .wallet-chip .bal{ font-weight:600; color:var(--accent); }
+  .btn{
+    border:none; border-radius:8px; padding:9px 16px; font-size:14px;
+    font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .btn-accent{ background:var(--accent); color:#1A0D00; }
+  .btn-accent:hover{ background:#f0af52; }
+  .btn-ghost{ background:transparent; color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover{ border-color:var(--accent); color:var(--accent); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  main{ max-width:820px; margin:0 auto; padding:28px 20px; }
+  .hero h1{ font-size:26px; margin:0 0 6px; }
+  .hero p{ color:var(--text-muted); margin:0 0 24px; font-size:14px; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab{
+    padding:8px 16px; border-radius:999px; font-size:13px; font-weight:600;
+    border:1px solid var(--border); background:transparent; color:var(--text-muted);
+    cursor:pointer; font-family:inherit;
+  }
+  .tab.active{ background:var(--surface-2); color:var(--accent); border-color:var(--accent-dim); }
+
+  .service-grid{ display:grid; grid-template-columns:1fr; gap:10px; }
+  @media(min-width:560px){ .service-grid{ grid-template-columns:1fr 1fr; } }
+  .service-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; cursor:pointer; transition:border-color .15s;
+  }
+  .service-card:hover{ border-color:var(--accent-dim); }
+  .service-card h3{ margin:0 0 6px; font-size:15px; font-weight:600; font-family:'Inter'; }
+  .service-card .price{ color:var(--accent); font-weight:600; font-size:14px; }
+  .empty{ color:var(--text-muted); font-size:14px; padding:30px 0; text-align:center; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none;
+    align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .overlay.show{ display:flex; }
+  @media(min-width:560px){ .overlay{ align-items:center; } }
+  .sheet{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px 16px 0 0; width:100%; max-width:480px; padding:24px;
+    max-height:88vh; overflow-y:auto;
+  }
+  @media(min-width:560px){ .sheet{ border-radius:16px; } }
+  .sheet h2{ margin:0 0 4px; font-size:19px; }
+  .sheet .sub{ color:var(--text-muted); font-size:13px; margin:0 0 18px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; }
+  .field input, .field select{
+    width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text); font-family:inherit; font-size:14px;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--accent-dim); border-color:var(--accent); }
+  .sheet-actions{ display:flex; gap:10px; margin-top:20px; }
+  .sheet-actions .btn{ flex:1; }
+  .msg{ font-size:13px; margin-top:10px; padding:10px; border-radius:8px; display:none; }
+  .msg.show{ display:block; }
+  .msg.success{ background:rgba(76,175,125,0.12); color:var(--success); }
+  .msg.error{ background:rgba(232,97,93,0.12); color:var(--error); }
+
+  .order-list{ margin-top:8px; }
+  .order-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 0; border-bottom:1px solid var(--border); font-size:13px;
+  }
+  .status-pill{
+    font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;
+    text-transform:capitalize;
+  }
+  .status-pending, .status-processing{ background:rgba(232,163,61,0.15); color:var(--accent); }
+  .status-completed{ background:rgba(76,175,125,0.15); color:var(--success); }
+  .status-failed, .status-refunded{ background:rgba(232,97,93,0.15); color:var(--error); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">A1SOCIALS</div>
+  <div class="wallet-chip" id="walletChip" style="display:none;">
+    <span>Wallet: <span class="bal" id="walletBalance">₦0</span></span>
+    <button class="btn btn-accent" id="addFundsBtn" style="padding:6px 12px;font-size:13px;">Add funds</button>
+    <button class="btn btn-ghost" id="logoutBtn" style="padding:6px 12px;font-size:13px;">Log out</button>
+  </div>
+</div>
+
+<!-- Auth gate -->
+<main id="authView">
+  <div class="hero">
+    <h1 id="authTitle">Log in</h1>
+    <p id="authSub">Access your wallet and orders.</p>
+  </div>
+  <div class="field">
+    <label for="authEmail">Email</label>
+    <input type="email" id="authEmail" placeholder="you@example.com">
+  </div>
+  <div class="field">
+    <label for="authPassword">Password</label>
+    <input type="password" id="authPassword" placeholder="At least 6 characters">
+  </div>
+  <div class="msg" id="authMsg"></div>
+  <div class="sheet-actions" style="margin-top:6px;">
+    <button class="btn btn-accent" id="authSubmitBtn" style="flex:1;">Log in</button>
+  </div>
+  <p style="margin-top:16px; font-size:13px; color:var(--text-muted);">
+    <span id="authToggleText">Don't have an account?</span>
+    <a href="#" id="authToggleLink" style="color:var(--accent);">Sign up</a>
+  </p>
+</main>
+
+<main id="appView" style="display:none;"></main>
+
+<template id="appViewTemplate">
+  <div class="hero">
+    <h1>Order in seconds.</h1>
+    <p>Pick a service below — social growth or a game top-up — and we deliver automatically.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-category="smm">Social growth</button>
+    <button class="tab" data-category="game_topup">Gaming top-ups</button>
+    <button class="tab" data-category="__orders">My orders</button>
+  </div>
+
+  <div id="serviceGrid" class="service-grid"></div>
+  <div id="orderListView" class="order-list" style="display:none;"></div>
+</template>
+
+<!-- Order sheet -->
+<div class="overlay" id="orderOverlay">
+  <div class="sheet">
+    <h2 id="orderServiceName">Service</h2>
+    <p class="sub" id="orderServicePrice"></p>
+
+    <div class="field">
+      <label for="quantityInput">Quantity</label>
+      <input type="number" id="quantityInput" min="1" value="1">
+    </div>
+
+    <div class="field" id="targetLinkField" style="display:none;">
+      <label for="targetLinkInput">Profile / post link</label>
+      <input type="text" id="targetLinkInput" placeholder="https://...">
+    </div>
+
+    <div class="field" id="playerIdField" style="display:none;">
+      <label for="playerIdInput">Player ID</label>
+      <input type="text" id="playerIdInput" placeholder="e.g. 123456789">
+    </div>
+
+    <div class="field" id="zoneIdField" style="display:none;">
+      <label for="zoneIdInput">Zone / Server ID</label>
+      <input type="text" id="zoneIdInput" placeholder="e.g. 2001">
+    </div>
+
+    <div class="msg" id="orderMsg"></div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancelOrderBtn">Cancel</button>
+      <button class="btn btn-accent" id="submitOrderBtn">Place order</button>
+    </div>
+  </div>
+</div>
+
+<!-- Wallet funding sheet -->
+<div class="overlay" id="walletOverlay">
+  <div class="sheet">
+    <h2>Add funds</h2>
+    <p class="sub">Fund your wallet via card, bank transfer or USSD.</p>
+
+    <div class="field">
+      <label for="fundAmountInput">Amount (₦)</label>
+      <input type="number" id="fundAmountInput" min="100" placeholder="e.g. 5000">
+    </div>
+
+    <div class="msg" id="walletMsg"></div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancelWalletBtn">Cancel</button>
+      <button class="btn btn-accent" id="payBtn">Continue to pay</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- CONFIG: point this at your deployed backend ----
+const CONFIG = {
+  API_BASE: 'http://localhost:3000/api' // change to https://yourapp.vercel.app/api in production
+};
+
+const $ = (id) => document.getElementById(id);
+let currentCategory = 'smm';
+let currentService = null;
+let isSignupMode = false;
+
+function getToken() { return localStorage.getItem('a1_token'); }
+function setToken(t) { localStorage.setItem('a1_token', t); }
+function clearToken() { localStorage.removeItem('a1_token'); }
+
+async function api(path, options = {}) {
+  const token = getToken();
+  const res = await fetch(`${CONFIG.API_BASE}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    ...options
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { clearToken(); showAuthView(); throw new Error('Session expired, please log in again'); }
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function formatNaira(n) {
+  return '₦' + Number(n).toLocaleString('en-NG', { maximumFractionDigits: 0 });
+}
+
+// ---- Auth view ----
+function showAuthView() {
+  $('authView').style.display = 'block';
+  $('appView').style.display = 'none';
+  $('walletChip').style.display = 'none';
+}
+
+function showAppView() {
+  $('authView').style.display = 'none';
+  $('appView').style.display = 'block';
+  $('walletChip').style.display = 'flex';
+  if (!$('appView').dataset.rendered) {
+    $('appView').innerHTML = $('appViewTemplate').innerHTML;
+    $('appView').dataset.rendered = '1';
+    wireAppView();
+  }
+  loadWallet();
+  switchTab(currentCategory);
+}
+
+$('authToggleLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  isSignupMode = !isSignupMode;
+  $('authTitle').textContent = isSignupMode ? 'Sign up' : 'Log in';
+  $('authSubmitBtn').textContent = isSignupMode ? 'Create account' : 'Log in';
+  $('authToggleText').textContent = isSignupMode ? 'Already have an account?' : "Don't have an account?";
+  $('authToggleLink').textContent = isSignupMode ? 'Log in' : 'Sign up';
+  $('authMsg').className = 'msg';
+});
+
+$('authSubmitBtn').addEventListener('click', async () => {
+  const msg = $('authMsg');
+  msg.className = 'msg';
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+
+  if (!email || !password) {
+    msg.textContent = 'Enter both email and password.';
+    msg.className = 'msg error show';
+    return;
+  }
+
+  try {
+    $('authSubmitBtn').disabled = true;
+    const endpoint = isSignupMode ? '/auth/signup' : '/auth/login';
+    const res = await fetch(`${CONFIG.API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+    setToken(data.token);
+    showAppView();
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.className = 'msg error show';
+  } finally {
+    $('authSubmitBtn').disabled = false;
+  }
+});
+
+$('logoutBtn').addEventListener('click', () => {
+  clearToken();
+  $('appView').dataset.rendered = '';
+  showAuthView();
+});
+
+// ---- App view (rendered once, after login) ----
+function wireAppView() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.category));
+  });
+}
+
+async function loadWallet() {
+  try {
+    const c = await api('/customers/me');
+    $('walletBalance').textContent = formatNaira(c.wallet_balance);
+  } catch (e) { /* handled by api() redirect on 401 */ }
+}
+
+async function loadServices(category) {
+  const grid = $('serviceGrid');
+  grid.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const services = await api(`/services?category=${category}`);
+    if (!services.length) {
+      grid.innerHTML = '<div class="empty">No services available in this category yet.</div>';
+      return;
+    }
+    grid.innerHTML = services.map(s => `
+      <div class="service-card" data-id="${s.id}">
+        <h3>${s.name}</h3>
+        <div class="price">${formatNaira(s.sell_price)}</div>
+      </div>
+    `).join('');
+
+    grid.querySelectorAll('.service-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const service = services.find(s => s.id == card.dataset.id);
+        openOrderSheet(service);
+      });
+    });
+  } catch (e) {
+    grid.innerHTML = `<div class="empty">Couldn't load services: ${e.message}</div>`;
+  }
+}
+
+async function loadMyOrders() {
+  const list = $('orderListView');
+  list.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const orders = await api('/orders');
+    if (!orders.length) {
+      list.innerHTML = '<div class="empty">No orders yet.</div>';
+      return;
+    }
+    list.innerHTML = orders.map(o => `
+      <div class="order-row">
+        <span>${o.service_name} × ${o.quantity}</span>
+        <span class="status-pill status-${o.status}">${o.status}</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = `<div class="empty">Couldn't load orders: ${e.message}</div>`;
+  }
+}
+
+function switchTab(category) {
+  currentCategory = category;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.category === category));
+
+  if (category === '__orders') {
+    $('serviceGrid').style.display = 'none';
+    $('orderListView').style.display = 'block';
+    loadMyOrders();
+  } else {
+    $('serviceGrid').style.display = 'grid';
+    $('orderListView').style.display = 'none';
+    loadServices(category);
+  }
+}
+
+// ---- Order sheet ----
+function openOrderSheet(service) {
+  currentService = service;
+  $('orderServiceName').textContent = service.name;
+  $('orderServicePrice').textContent = `${formatNaira(service.sell_price)} each`;
+  $('quantityInput').value = 1;
+  $('orderMsg').className = 'msg';
+
+  $('targetLinkField').style.display = service.category === 'smm' ? 'block' : 'none';
+  $('playerIdField').style.display = service.category === 'game_topup' ? 'block' : 'none';
+  $('zoneIdField').style.display = service.requires_zone_id ? 'block' : 'none';
+
+  $('orderOverlay').classList.add('show');
+}
+
+$('cancelOrderBtn').addEventListener('click', () => $('orderOverlay').classList.remove('show'));
+
+$('submitOrderBtn').addEventListener('click', async () => {
+  const msg = $('orderMsg');
+  msg.className = 'msg';
+
+  const payload = {
+    service_id: currentService.id,
+    quantity: Number($('quantityInput').value) || 1,
+    target_link: $('targetLinkInput').value || undefined,
+    player_id: $('playerIdInput').value || undefined,
+    zone_id: $('zoneIdInput').value || undefined,
+  };
+
+  try {
+    $('submitOrderBtn').disabled = true;
+    await api('/orders', { method: 'POST', body: JSON.stringify(payload) });
+    msg.textContent = 'Order placed! Track it under "My orders".';
+    msg.className = 'msg success show';
+    loadWallet();
+    setTimeout(() => $('orderOverlay').classList.remove('show'), 1400);
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.className = 'msg error show';
+  } finally {
+    $('submitOrderBtn').disabled = false;
+  }
+});
+
+// ---- Wallet funding sheet ----
+$('addFundsBtn').addEventListener('click', () => {
+  $('walletMsg').className = 'msg';
+  $('walletOverlay').classList.add('show');
+});
+$('cancelWalletBtn').addEventListener('click', () => $('walletOverlay').classList.remove('show'));
+
+$('payBtn').addEventListener('click', async () => {
+  const msg = $('walletMsg');
+  msg.className = 'msg';
+  const amount = Number($('fundAmountInput').value);
+
+  if (!amount || amount < 100) {
+    msg.textContent = 'Enter a valid amount (minimum ₦100).';
+    msg.className = 'msg error show';
+    return;
+  }
+
+  try {
+    $('payBtn').disabled = true;
+    const init = await api('/wallet/initiate', {
+      method: 'POST',
+      body: JSON.stringify({ amount })
+    });
+
+    FlutterwaveCheckout({
+      public_key: init.public_key,
+      tx_ref: init.tx_ref,
+      amount: init.amount,
+      currency: 'NGN',
+      payment_options: 'card,banktransfer,ussd',
+      customer: { email: init.customer_email },
+      customizations: {
+        title: 'A1SOCIALS Wallet',
+        description: 'Fund your wallet'
+      },
+      callback: async function (data) {
+        try {
+          await api('/wallet/verify', {
+            method: 'POST',
+            body: JSON.stringify({ transaction_id: data.transaction_id, tx_ref: data.tx_ref })
+          });
+          msg.textContent = 'Wallet funded successfully!';
+          msg.className = 'msg success show';
+          loadWallet();
+          setTimeout(() => $('walletOverlay').classList.remove('show'), 1400);
+        } catch (e) {
+          msg.textContent = `Payment made but verification failed: ${e.message}. Contact support with ref ${data.tx_ref}.`;
+          msg.className = 'msg error show';
+        }
+      },
+      onclose: function () { $('payBtn').disabled = false; }
+    });
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.className = 'msg error show';
+    $('payBtn').disabled = false;
+  }
+});
+
+// ---- Init ----
+if (getToken()) {
+  showAppView();
+} else {
+  showAuthView();
+}
+</script>
+</body>
+</html>

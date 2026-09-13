@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A1SOCIALS — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0C0E12; --surface:#151821; --surface-2:#1C202B; --border:rgba(240,244,250,0.08);
+    --text:#EDEFF4; --text-muted:#8B93A7; --accent:#5AC8A8; --accent-dim:#2C6354;
+    --warn:#E8A33D; --error:#E8615D; --success:#5AC8A8; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+  h1,h2,h3,.brand{ font-family:'Space Grotesk',sans-serif; }
+
+  .layout{ display:flex; min-height:100vh; }
+  .sidebar{
+    width:200px; background:var(--surface); border-right:1px solid var(--border);
+    padding:20px 14px; flex-shrink:0;
+  }
+  .brand{ font-weight:700; font-size:18px; margin-bottom:24px; padding:0 8px; }
+  .nav-item{
+    display:block; padding:10px 12px; border-radius:8px; color:var(--text-muted);
+    font-size:14px; font-weight:500; cursor:pointer; margin-bottom:4px;
+  }
+  .nav-item:hover{ background:var(--surface-2); color:var(--text); }
+  .nav-item.active{ background:var(--accent-dim); color:var(--accent); }
+
+  .content{ flex:1; padding:28px 32px; max-width:1100px; }
+  .content h1{ font-size:22px; margin:0 0 4px; }
+  .content .sub{ color:var(--text-muted); font-size:13px; margin:0 0 24px; }
+
+  .stat-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:24px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+  .stat-card .val{ font-size:22px; font-weight:700; font-family:'Space Grotesk'; }
+  .stat-card .label{ font-size:12px; color:var(--text-muted); text-transform:capitalize; }
+
+  table{ width:100%; border-collapse:collapse; background:var(--surface); border-radius:var(--radius); overflow:hidden; }
+  th,td{ text-align:left; padding:10px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+  th{ color:var(--text-muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.03em; }
+  tr:last-child td{ border-bottom:none; }
+
+  .btn{ border:none; border-radius:7px; padding:7px 13px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-accent{ background:var(--accent); color:#04231B; }
+  .btn-ghost{ background:transparent; color:var(--text); border:1px solid var(--border); }
+  .btn-danger{ background:transparent; color:var(--error); border:1px solid var(--error); }
+  .btn-sm{ padding:5px 10px; font-size:12px; }
+
+  .toolbar{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+  select, input{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:7px; font-size:13px; font-family:inherit;
+  }
+
+  .status-pill{ font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; text-transform:capitalize; }
+  .status-pending, .status-processing{ background:rgba(232,163,61,0.15); color:var(--warn); }
+  .status-completed{ background:rgba(90,200,168,0.15); color:var(--success); }
+  .status-failed, .status-refunded{ background:rgba(232,97,93,0.15); color:var(--error); }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:50; }
+  .modal-overlay.show{ display:flex; }
+  .modal{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; width:100%; max-width:440px; max-height:85vh; overflow-y:auto; }
+  .modal h2{ margin:0 0 16px; font-size:17px; }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; color:var(--text-muted); margin-bottom:5px; }
+  .field input, .field select{ width:100%; }
+  .modal-actions{ display:flex; gap:8px; margin-top:16px; }
+  .modal-actions .btn{ flex:1; }
+  .msg{ font-size:13px; margin-top:10px; padding:9px; border-radius:7px; display:none; }
+  .msg.show{ display:block; }
+  .msg.success{ background:rgba(90,200,168,0.12); color:var(--success); }
+  .msg.error{ background:rgba(232,97,93,0.12); color:var(--error); }
+
+  .login-screen{ display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-box{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:28px; width:100%; max-width:340px; }
+  .empty{ color:var(--text-muted); font-size:13px; padding:20px; text-align:center; }
+</style>
+</head>
+<body>
+
+<!-- Admin key gate -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2 style="margin:0 0 4px;">A1SOCIALS Admin</h2>
+    <p class="sub" style="margin:0 0 16px;color:var(--text-muted);font-size:13px;">Enter your admin API key to continue.</p>
+    <div class="field">
+      <label for="adminKeyInput">Admin API Key</label>
+      <input type="password" id="adminKeyInput" placeholder="Paste ADMIN_API_KEY">
+    </div>
+    <div class="msg" id="loginMsg"></div>
+    <button class="btn btn-accent" id="loginBtn" style="width:100%;margin-top:6px;">Enter</button>
+  </div>
+</div>
+
+<div class="layout" id="mainLayout" style="display:none;">
+  <div class="sidebar">
+    <div class="brand">A1SOCIALS</div>
+    <div class="nav-item active" data-view="dashboard">Dashboard</div>
+    <div class="nav-item" data-view="orders">Order Queue</div>
+    <div class="nav-item" data-view="services">Services</div>
+    <div class="nav-item" data-view="providers">Providers</div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<!-- Service modal -->
+<div class="modal-overlay" id="serviceModal">
+  <div class="modal">
+    <h2 id="serviceModalTitle">Add service</h2>
+    <div class="field"><label>Category</label>
+      <select id="svcCategory"><option value="smm">SMM</option><option value="game_topup">Game top-up</option></select>
+    </div>
+    <div class="field"><label>Name</label><input id="svcName" placeholder="e.g. Free Fire 100 Diamonds"></div>
+    <div class="field"><label>Provider ID</label><input id="svcProviderId" type="number" placeholder="1"></div>
+    <div class="field"><label>Provider SKU</label><input id="svcProviderSku" placeholder="FF100"></div>
+    <div class="field"><label>Cost price (₦)</label><input id="svcCostPrice" type="number"></div>
+    <div class="field"><label>Sell price (₦)</label><input id="svcSellPrice" type="number"></div>
+    <div class="field"><label><input type="checkbox" id="svcRequiresZone" style="width:auto;"> Requires zone/server ID</label></div>
+    <div class="msg" id="serviceModalMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="serviceModalCancel">Cancel</button>
+      <button class="btn btn-accent" id="serviceModalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Provider modal -->
+<div class="modal-overlay" id="providerModal">
+  <div class="modal">
+    <h2>Add provider</h2>
+    <div class="field"><label>Name</label><input id="provName" placeholder="e.g. Yokcash"></div>
+    <div class="field"><label>Base URL</label><input id="provBaseUrl" placeholder="https://api.provider.com/v1"></div>
+    <div class="field"><label>API Key</label><input id="provApiKey" placeholder="key"></div>
+    <div class="field"><label>API Secret (optional)</label><input id="provApiSecret" placeholder="secret"></div>
+    <div class="msg" id="providerModalMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="providerModalCancel">Cancel</button>
+      <button class="btn btn-accent" id="providerModalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONFIG = { API_BASE: 'http://localhost:3000/api' };
+const $ = (id) => document.getElementById(id);
+let currentView = 'dashboard';
+let servicesCache = [];
+let providersCache = [];
+
+function getKey() { return sessionStorage.getItem('a1_admin_key'); }
+function setKey(k) { sessionStorage.setItem('a1_admin_key', k); }
+
+async function api(path, options = {}) {
+  const res = await fetch(`${CONFIG.API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+    ...options
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { sessionStorage.removeItem('a1_admin_key'); showLogin(); throw new Error('Unauthorized'); }
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function formatNaira(n) { return '₦' + Number(n).toLocaleString('en-NG', { maximumFractionDigits: 0 }); }
+
+function showLogin() { $('loginScreen').style.display = 'flex'; $('mainLayout').style.display = 'none'; }
+function showApp() { $('loginScreen').style.display = 'none'; $('mainLayout').style.display = 'flex'; renderView('dashboard'); }
+
+$('loginBtn').addEventListener('click', async () => {
+  const key = $('adminKeyInput').value.trim();
+  const msg = $('loginMsg');
+  msg.className = 'msg';
+  if (!key) { msg.textContent = 'Enter a key.'; msg.className = 'msg error show'; return; }
+
+  setKey(key);
+  try {
+    await api('/admin/orders/stats/summary'); // sanity check the key works
+    showApp();
+  } catch (e) {
+    msg.textContent = 'Invalid admin key.';
+    msg.className = 'msg error show';
+  }
+});
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    renderView(item.dataset.view);
+  });
+});
+
+async function renderView(view) {
+  currentView = view;
+  const content = $('content');
+  content.innerHTML = '<div class="empty">Loading…</div>';
+
+  if (view === 'dashboard') return renderDashboard();
+  if (view === 'orders') return renderOrders();
+  if (view === 'services') return renderServices();
+  if (view === 'providers') return renderProviders();
+}
+
+// ---- Dashboard ----
+async function renderDashboard() {
+  const content = $('content');
+  try {
+    const stats = await api('/admin/orders/stats/summary');
+    const counts = {};
+    stats.statusCounts.forEach(s => counts[s.status] = s.count);
+
+    content.innerHTML = `
+      <h1>Dashboard</h1>
+      <p class="sub">Live snapshot of orders and revenue.</p>
+      <div class="stat-row">
+        <div class="stat-card"><div class="val">${formatNaira(stats.totalRevenue)}</div><div class="label">Total revenue</div></div>
+        <div class="stat-card"><div class="val">${counts.pending || 0}</div><div class="label">Pending</div></div>
+        <div class="stat-card"><div class="val">${counts.processing || 0}</div><div class="label">Processing</div></div>
+        <div class="stat-card"><div class="val">${counts.completed || 0}</div><div class="label">Completed</div></div>
+        <div class="stat-card"><div class="val">${counts.failed || 0}</div><div class="label">Failed</div></div>
+        <div class="stat-card"><div class="val">${counts.refunded || 0}</div><div class="label">Refunded</div></div>
+      </div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="empty">Couldn't load dashboard: ${e.message}</div>`;
+  }
+}
+
+// ---- Order queue ----
+async function renderOrders(statusFilter = '', categoryFilter = '') {
+  const content = $('content');
+  content.innerHTML = `
+    <h1>Order Queue</h1>
+    <p class="sub">All orders across every customer. Use overrides for edge cases the poller can't resolve.</p>
+    <div class="toolbar">
+      <div style="display:flex;gap:8px;">
+        <select id="statusFilter">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="processing">Processing</option>
+          <option value="completed">Completed</option>
+          <option value="failed">Failed</option>
+          <option value="refunded">Refunded</option>
+        </select>
+        <select id="categoryFilter">
+          <option value="">All categories</option>
+          <option value="smm">SMM</option>
+          <option value="game_topup">Game top-up</option>
+        </select>
+      </div>
+    </div>
+    <div id="ordersTableWrap"><div class="empty">Loading…</div></div>
+  `;
+  $('statusFilter').value = statusFilter;
+  $('categoryFilter').value = categoryFilter;
+  $('statusFilter').addEventListener('change', () => renderOrders($('statusFilter').value, $('categoryFilter').value));
+  $('categoryFilter').addEventListener('change', () => renderOrders($('statusFilter').value, $('categoryFilter').value));
+
+  try {
+    const params = new URLSearchParams();
+    if (statusFilter) params.set('status', statusFilter);
+    if (categoryFilter) params.set('category', categoryFilter);
+    const orders = await api(`/admin/orders?${params.toString()}`);
+
+    const wrap = $('ordersTableWrap');
+    if (!orders.length) { wrap.innerHTML = '<div class="empty">No orders match this filter.</div>'; return; }
+
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>ID</th><th>Customer</th><th>Service</th><th>Qty</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td>#${o.id}</td>
+              <td>${o.customer_email}</td>
+              <td>${o.service_name}</td>
+              <td>${o.quantity}</td>
+              <td>${formatNaira(o.amount_charged)}</td>
+              <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+              <td>
+                <select class="override-select" data-id="${o.id}" style="font-size:12px;padding:4px 6px;">
+                  <option value="">Override…</option>
+                  <option value="completed">Mark completed</option>
+                  <option value="failed">Mark failed</option>
+                  <option value="refunded">Refund</option>
+                </select>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    wrap.querySelectorAll('.override-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        if (!sel.value) return;
+        if (!confirm(`Set order #${sel.dataset.id} to "${sel.value}"?`)) { sel.value = ''; return; }
+        try {
+          await api(`/admin/orders/${sel.dataset.id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: sel.value })
+          });
+          renderOrders(statusFilter, categoryFilter);
+        } catch (e) {
+          alert(`Failed: ${e.message}`);
+        }
+      });
+    });
+  } catch (e) {
+    $('ordersTableWrap').innerHTML = `<div class="empty">Couldn't load orders: ${e.message}</div>`;
+  }
+}
+
+// ---- Services ----
+async function renderServices() {
+  const content = $('content');
+  content.innerHTML = `
+    <h1>Services</h1>
+    <p class="sub">Products shown on the storefront — SMM and game top-ups, from one table.</p>
+    <div class="toolbar"><span></span><button class="btn btn-accent" id="addServiceBtn">+ Add service</button></div>
+    <div id="servicesTableWrap"><div class="empty">Loading…</div></div>
+  `;
+  $('addServiceBtn').addEventListener('click', () => openServiceModal());
+
+  try {
+    servicesCache = await api('/services'); // public GET, no admin filter needed for listing
+    const wrap = $('servicesTableWrap');
+    if (!servicesCache.length) { wrap.innerHTML = '<div class="empty">No services yet.</div>'; return; }
+
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Name</th><th>Category</th><th>Cost</th><th>Sell</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${servicesCache.map(s => `
+            <tr>
+              <td>${s.name}</td>
+              <td>${s.category}</td>
+              <td>${formatNaira(s.cost_price)}</td>
+              <td>${formatNaira(s.sell_price)}</td>
+              <td><span class="status-pill status-${s.status === 'active' ? 'completed' : 'failed'}">${s.status}</span></td>
+              <td><button class="btn btn-ghost btn-sm toggle-service" data-id="${s.id}" data-status="${s.status}">${s.status === 'active' ? 'Disable' : 'Enable'}</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    wrap.querySelectorAll('.toggle-service').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const newStatus = btn.dataset.status === 'active' ? 'disabled' : 'active';
+        try {
+          await api(`/services/${btn.dataset.id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+          renderServices();
+        } catch (e) { alert(`Failed: ${e.message}`); }
+      });
+    });
+  } catch (e) {
+    $('servicesTableWrap').innerHTML = `<div class="empty">Couldn't load services: ${e.message}</div>`;
+  }
+}
+
+function openServiceModal() {
+  $('svcName').value = ''; $('svcProviderId').value = ''; $('svcProviderSku').value = '';
+  $('svcCostPrice').value = ''; $('svcSellPrice').value = ''; $('svcRequiresZone').checked = false;
+  $('serviceModalMsg').className = 'msg';
+  $('serviceModal').classList.add('show');
+}
+$('serviceModalCancel').addEventListener('click', () => $('serviceModal').classList.remove('show'));
+$('serviceModalSave').addEventListener('click', async () => {
+  const msg = $('serviceModalMsg');
+  msg.className = 'msg';
+  const payload = {
+    category: $('svcCategory').value,
+    name: $('svcName').value,
+    provider_id: Number($('svcProviderId').value),
+    provider_sku: $('svcProviderSku').value,
+    cost_price: Number($('svcCostPrice').value),
+    sell_price: Number($('svcSellPrice').value),
+    requires_zone_id: $('svcRequiresZone').checked
+  };
+  if (!payload.name || !payload.provider_sku || !payload.cost_price || !payload.sell_price) {
+    msg.textContent = 'Fill in all required fields.'; msg.className = 'msg error show'; return;
+  }
+  try {
+    await api('/services', { method: 'POST', body: JSON.stringify(payload) });
+    $('serviceModal').classList.remove('show');
+    renderServices();
+  } catch (e) {
+    msg.textContent = e.message; msg.className = 'msg error show';
+  }
+});
+
+// ---- Providers ----
+async function renderProviders() {
+  const content = $('content');
+  content.innerHTML = `
+    <h1>Providers</h1>
+    <p class="sub">Upstream APIs you source SMM services and game top-ups from.</p>
+    <div class="toolbar"><span></span><button class="btn btn-accent" id="addProviderBtn">+ Add provider</button></div>
+    <div id="providersTableWrap"><div class="empty">Loading…</div></div>
+  `;
+  $('addProviderBtn').addEventListener('click', () => openProviderModal());
+
+  try {
+    providersCache = await api('/admin/providers');
+    const wrap = $('providersTableWrap');
+    if (!providersCache.length) { wrap.innerHTML = '<div class="empty">No providers yet — add one to start mapping services to it.</div>'; return; }
+
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Name</th><th>Base URL</th><th>Balance</th><th>Status</th></tr></thead>
+        <tbody>
+          ${providersCache.map(p => `
+            <tr><td>${p.name}</td><td>${p.base_url}</td><td>${formatNaira(p.balance)}</td>
+            <td><span class="status-pill status-${p.status === 'active' ? 'completed' : 'failed'}">${p.status}</span></td></tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    $('providersTableWrap').innerHTML = `<div class="empty">Couldn't load providers: ${e.message}</div>`;
+  }
+}
+
+function openProviderModal() {
+  $('provName').value = ''; $('provBaseUrl').value = ''; $('provApiKey').value = ''; $('provApiSecret').value = '';
+  $('providerModalMsg').className = 'msg';
+  $('providerModal').classList.add('show');
+}
+$('providerModalCancel').addEventListener('click', () => $('providerModal').classList.remove('show'));
+$('providerModalSave').addEventListener('click', async () => {
+  const msg = $('providerModalMsg');
+  msg.className = 'msg';
+  const payload = { name: $('provName').value, base_url: $('provBaseUrl').value, api_key: $('provApiKey').value, api_secret: $('provApiSecret').value };
+  if (!payload.name || !payload.base_url) { msg.textContent = 'Name and Base URL are required.'; msg.className = 'msg error show'; return; }
+  try {
+    await api('/admin/providers', { method: 'POST', body: JSON.stringify(payload) });
+    $('providerModal').classList.remove('show');
+    renderProviders();
+  } catch (e) {
+    msg.textContent = e.message; msg.className = 'msg error show';
+  }
+});
+
+// ---- Init ----
+if (getKey()) { showApp(); } else { showLogin(); }
+</script>
+</body>
+</html>

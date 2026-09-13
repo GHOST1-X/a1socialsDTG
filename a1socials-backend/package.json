@@ -1,0 +1,20 @@
+{
+  "name": "a1socials-backend",
+  "version": "1.0.0",
+  "description": "Custom backend for A1SOCIALS - head-control admin calling out to SMM + game top-up provider APIs",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "node local-server.js",
+    "start": "node local-server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "serverless-http": "^3.2.0",
+    "pg": "^8.12.0",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5"
+  }
+}
